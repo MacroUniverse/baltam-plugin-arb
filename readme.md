@@ -10,7 +10,7 @@
 目前使用以前需要把所有 .so 文件都复制/移动到 `/opt/Baltamatica/lib` 目录下面， 或者把 `/opt/Baltamatica/plugins/arb` 文件夹添加到环境变量 `LD_LIBRARY_PATH` 中
 
 ## Linux 编译说明
-* 把这个仓库 clone 到 `baltamatica\bex\test\plugins\arb\.git`
+* 把这个仓库 clone 到 `baltamatica/bex/test/plugins/arb/.git`
 * 目前在 Ubuntu 22.04 下编译测试， 把这个文件夹所有内容复制到新建文件夹 `/opt/Baltamatica/bex/test/plugins/arb/` 直接运行 `./make.sh` 即可编译 `main.so` 其他文件的来源都是 Ubuntu 22.04 的 `sudo apt install libflint-arb`， 用 `ldd main.so` 就可以查看所有依赖库的目录。
 
 ## Windows 编译说明
