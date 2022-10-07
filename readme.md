@@ -16,4 +16,4 @@
 ## Windows 编译说明
 * 把这个仓库 clone 到 `baltamatica\bex\test\plugins\arb\.git`
 * 双击打开群文件 `baltam_SDK/msys64-tmp` 中的 msys2.exe， 然后把这个文件夹所有内容复制到新建文件夹 `cd /c/baltamatica/bex/test/plugins/arb`， 然后运行 `make-windows.sh` 即可。
-* 如果 baltam 加载 plugin 时出现错误 `The specified module could not be found.`， 就用在 msys2 里面用 `ldd main.dll` 查看所有依赖的其他 dll， 然后确认要么是 windows 的系统 dll， 要么复制到 `baltamatica\lib` 目录中。
+* 如果 baltam 加载 plugin 时出现错误 `The specified module could not be found.`， 说明缺少 `main.dll` 依赖的 `dll` 找不到。 在 msys2 里面用 `ldd main.dll` 可以查看所有依赖的其他 dll， 然后确认要么是 windows 的系统 dll， 要么复制到 `baltamatica\lib` 目录中。
