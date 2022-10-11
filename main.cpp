@@ -6,7 +6,6 @@
  *    Description:  main file for "arb plugin"
  *
  *        Version:  1.0
- *        Created:  07/31/2021 09:04:43 PM
  *       Revision:  none
  *       Compiler:  g++
  *
@@ -86,8 +85,8 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     // bex::__bxPrintf(("b = " + to_string(b) + "\n").c_str());
     // bex::__bxPrintf(("c = " + to_string(c) + "\n").c_str());
 
-    if (nlhs != 1) {
-        bex::__bxErrMsgTxt("只允许一个输出");
+    if (nlhs > 1) {
+        bex::__bxErrMsgTxt("只允许 <= 1 个输出");
         return;
     }
 
