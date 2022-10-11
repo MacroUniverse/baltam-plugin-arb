@@ -78,9 +78,10 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
 
     double *pa = bxGetDoubles(prhs[0]);
     double *pb = bxGetDoubles(prhs[1]);
-    double *pc = bxGetDoubles(prhs[2]);
+    double *pz = bxGetDoubles(prhs[2]);
+    baSize z_M = bxGetM(prhs[2]), z_N = bxGetN(prhs[2]);
 
-    double a = *pa, b = *pb, c = *pc;
+    double a = *pa, b = *pb, c = *pz;
     // bex::__bxPrintf(("a = " + to_string(a) + "\n").c_str());
     // bex::__bxPrintf(("b = " + to_string(b) + "\n").c_str());
     // bex::__bxPrintf(("c = " + to_string(c) + "\n").c_str());
@@ -90,10 +91,10 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
         return;
     }
 
-    baSize m = 1, n = 1;
-    plhs[0] = bxCreateDoubleMatrix(m, n, bxREAL); // bxCOMPLEX
+    plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxREAL); // bxCOMPLEX
     double *py = bxGetDoubles(plhs[0]);
-    *py = slisc::arb_hypergeom1F1(a, b, c);
+    for (baSize i = 0; i < z_M*z_N; ++i)
+        py[i] = slisc::arb_hypergeom1F1(a, b, pz[i]);
 
     // bex::__bxPrintf("hypergeom 终止！\n");
     // bex::__bxErrMsgTxt("调试终止!");
