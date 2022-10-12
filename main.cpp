@@ -19,6 +19,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <complex>
 #include "bex/bex.hpp"
 #include "SLISC/hypergeom.h"
 #ifdef BV_USE_DYN_LOADER
@@ -102,15 +103,17 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
 
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxREAL);
         double *py = bxGetDoubles(plhs[0]);
-        for (baSize i = 0; i < z_M*z_N; ++i)
+        for (baSize i = 0; i < z_M*z_N; ++i) {
+            bex::__bxPrintf("\n调用实数的 arb_hypergeom1F1！\n");
             py[i] = slisc::arb_hypergeom1F1(a, b, pz[i]);
+        }
     }
     else {
         bex::__bxPrintf("\nusing complex！\n");
-        std::complex<double> a, b;
+        complex<double> a, b;
 
         if (bxIsComplexDouble(prhs[0])) {
-            a = *((std::complex<double> *)bxGetComplexDoubles(prhs[0]));
+            a = *((complex<double> *)bxGetComplexDoubles(prhs[0]));
             bex::__bxPrintf("\ngot complex double a!");
         }
         else
@@ -120,7 +123,7 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
         bex::__bxPrintf(("\na = " + to_string(a.real()) + ", " + to_string(a.imag()) + "\n").c_str());
 
         if (bxIsComplexDouble(prhs[1]))
-            b = *(std::complex<double> *)bxGetComplexDoubles(prhs[1]);
+            b = *(complex<double> *)bxGetComplexDoubles(prhs[1]);
         else
             b = *bxGetDoubles(prhs[1]);
         bex::__bxPrintf(("\nb = " + to_string(b.real()) + "\n").c_str());
@@ -128,25 +131,25 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
         baSize z_M = bxGetM(prhs[2]), z_N = bxGetN(prhs[2]);
         bex::__bxPrintf(("\nz_M = " + to_string(z_M) + ", z_N = " + to_string(z_N)).c_str());
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxCOMPLEX);
-        std::complex<double> *py = (std::complex<double> *)bxGetComplexDoubles(plhs[0]);
-        bex::__bxErrMsgTxt("\npy 创建完成！\n");
+        complex<double> *py = (complex<double> *)bxGetComplexDoubles(plhs[0]);
+        bex::__bxPrintf("\npy 创建完成！\n");
 
         if (bxIsComplexDouble(prhs[2])) {
-            std::complex<double> *pz = (std::complex<double> *)bxGetComplexDoubles(plhs[2]);
+            complex<double> *pz = (complex<double> *)bxGetComplexDoubles(plhs[2]);
             bex::__bxPrintf("\nget Comp *pz 完成！\n");
             for (baSize i = 0; i < z_M*z_N; ++i) {
-                bex::__bxErrMsgTxt("\n调用 complex arb_hypergeom1F1...\n");
+                bex::__bxPrintf("\n调用 complex arb_hypergeom1F1...\n");
                 py[i] = slisc::arb_hypergeom1F1(a, b, pz[i]);
             }
             bex::__bxPrintf("\ncomplex z 完成！\n");
         }
         else {
-            double *pz = bxGetDoubles(plhs[2]);
+            double *pz = bxGetDoubles(prhs[2]);
             bex::__bxPrintf("\nget double *pz 完成！\n");
             bex::__bxPrintf(("\nz = " + to_string(*pz) + "\n").c_str());
-            bex::__bxErrMsgTxt("\n调用 complex arb_hypergeom1F1...\n");
+            bex::__bxPrintf("\n调用 complex arb_hypergeom1F1...\n");
             for (baSize i = 0; i < z_M*z_N; ++i) {
-                bex::__bxErrMsgTxt("\n调用 complex arb_hypergeom1F1...\n");
+                bex::__bxPrintf("\n调用 complex arb_hypergeom1F1...\n");
                 py[i] = slisc::arb_hypergeom1F1(a, b, pz[i]);
             }
             bex::__bxPrintf("\nreal z 完成！\n");
