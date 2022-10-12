@@ -5,11 +5,10 @@
  *
  *    Description:  main file for "arb plugin"
  *
- *        Version:  1.0
- *       Revision:  none
+ *       Version:  0.1
  *       Compiler:  g++
  *
- *         Author:  Hongyu Shi (@addis), addis1@phys.ksu.edu.cn
+ *         Author:  Hongyu Shi (@shi), shi@phys.ksu.edu.cn
  *   Organization:  Kansas State University
  *
  * ==========================================================================
@@ -22,9 +21,7 @@
 #include <complex>
 #include "bex/bex.hpp"
 #include "SLISC/hypergeom.h"
-#ifdef BV_USE_DYN_LOADER
 #include "bex/bex.import.hpp"
-#endif
 
 #define PLUGIN_NAME "arb"
 
@@ -37,7 +34,6 @@ void hypergeom(int, bxArray*[], int, const bxArray*[]);
 static const char * hypergeom_help =
     "详见 Matlab 的 hypergeom 函数文档。";
 
-#ifdef BV_USE_DYN_LOADER
 BALTAM_BEX_DEFINE_FCN_VARS
 
 int bxPluginInitLib(void * hdl){
@@ -45,7 +41,6 @@ int bxPluginInitLib(void * hdl){
     BALTAM_BEX_IMPORT_FCN_FROM(hdl)
     return 0;
 }
-#endif
 
 int bxPluginInit(int, const bxArray*[]){
     return 0;
@@ -65,49 +60,42 @@ bexfun_info_t * bxPluginFunctions(){
 
 void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     using namespace slisc;
-    // 【管用】 bex::__bxPrintf("\n测试 hypergeom！\n");
-    // 【不管用】 bxPrintf("测试一下 bxPrintf 管不管用");
+    // bex::__bxPrintf("整数为 %ld， 浮点数为 %g， 字符串为 %s\n", 3, 3.1415926, "一些字符串");
+    // bxPrintf("整数为 %ld， 浮点数为 %g， 字符串为 %s\n", 3, 3.1415926, "一些字符串");
     // 【不管用】 cout << "测试一下 cout 管不管用" << endl;
-#ifndef BV_USE_DYN_LOADER
-    bex::__bxErrMsgTxt("目前仅支持动态编译！");
-#endif
 
-    if (nrhs != 3) {
-        bex::__bxErrMsgTxt("用法： w = hypergeom(a, b, z)");
-        return;
-    }
+    if (nrhs != 3)
+        bxErrMsgTxt("用法： hypergeom(a, b, z)， 其中 a, b 为标量， z 为实数或复数向量。");
 
-    bool has_comp = false;
+    vector<bool> arg_comp(3, false); bool has_comp = false;
     for (int i = 0; i < 3; ++i) {
         if (bxIsComplexDouble(prhs[i]))
-            has_comp = true;
+            has_comp = arg_comp[i] = true;
         else if (!bxIsRealDouble(prhs[i]))
-            bex::__bxErrMsgTxt("参数必须是双精度实数或复数！");
+            bxErrMsgTxt("参数必须是双精度实数或复数！");
     }
+    if (bxGetM(prhs[0])*bxGetN(prhs[0]) != 1 || bxGetM(prhs[1])*bxGetN(prhs[1]) != 1)
+        bxErrMsgTxt("用法： hypergeom(a, b, z)， 其中 a, b 为标量， z 为实数或复数向量。");
 
-    if (nlhs > 1) {
-        bex::__bxErrMsgTxt("只允许 <= 1 个输出");
-        return;
-    }
+    if (nlhs > 1)
+        bxErrMsgTxt("只允许 <= 1 个输出");
+    baSize z_M = bxGetM(prhs[2]), z_N = bxGetN(prhs[2]);
 
-    if (!has_comp) {
+    if (!has_comp) { // real args
         double a = *bxGetDoubles(prhs[0]);
         double b = *bxGetDoubles(prhs[1]);
         double *pz = bxGetDoubles(prhs[2]);
-        baSize z_M = bxGetM(prhs[2]), z_N = bxGetN(prhs[2]);
+        
 
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxREAL);
         double *py = bxGetDoubles(plhs[0]);
-        for (baSize i = 0; i < z_M*z_N; ++i) {
-            py[i] = slisc::arb_hypergeom1F1(a, b, pz[i]);
-        }
+        for (baSize i = 0; i < z_M*z_N; ++i)
+            py[i] = arb_hypergeom1F1(a, b, pz[i]);
     }
-    else {
+    else { // complex args
         Comp a, b;
-
-        if (bxIsComplexDouble(prhs[0])) {
+        if (bxIsComplexDouble(prhs[0]))
             a = *((Comp *)bxGetComplexDoubles(prhs[0]));
-        }
         else
             a = *bxGetDoubles(prhs[0]);
 
@@ -116,27 +104,24 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
         else
             b = *bxGetDoubles(prhs[1]);
 
-        baSize z_M = bxGetM(prhs[2]), z_N = bxGetN(prhs[2]);
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxCOMPLEX);
         Comp *py = (Comp *)bxGetComplexDoubles(plhs[0]);
 
         if (bxIsComplexDouble(prhs[2])) {
             Comp *pz = (Comp *)bxGetComplexDoubles(prhs[2]);
-            for (baSize i = 0; i < z_M*z_N; ++i) {
-                py[i] = slisc::arb_hypergeom1F1(a, b, pz[i]);
-            }
+            for (baSize i = 0; i < z_M*z_N; ++i)
+                py[i] = arb_hypergeom1F1(a, b, pz[i]);
         }
         else {
             double *pz = bxGetDoubles(prhs[2]);
-            for (baSize i = 0; i < z_M*z_N; ++i) {
-                py[i] = slisc::arb_hypergeom1F1(a, b, pz[i]);
-            }
+            for (baSize i = 0; i < z_M*z_N; ++i)
+                py[i] = arb_hypergeom1F1(a, b, pz[i]);
         }
     }
 }
 
 // 用于直接编译成可执行文件进行调试， 而不是动态链接库
-#if defined(BV_USE_DYN_LOADER) && defined(BV_BUILD_EXE)
+#if defined(ARB_BUILD_EXE)
 int main(){
     using namespace slisc;
     vector<const bxArray*> in_args;
