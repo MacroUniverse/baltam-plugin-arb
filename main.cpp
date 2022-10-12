@@ -108,10 +108,6 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     else {
         bex::__bxPrintf("\nusing complex！\n");
         std::complex<double> a, b;
-        a = std::complex<double>(1.123,2.234);
-        std::string s = "\na = " + to_string(a.real()) + ", " + to_string(a.imag()) + "\n";
-        bex::__bxPrintf("\nprinting string...");
-        bex::__bxErrMsgTxt(s.c_str());
 
         if (bxIsComplexDouble(prhs[0])) {
             a = *((std::complex<double> *)bxGetComplexDoubles(prhs[0]));
@@ -121,9 +117,7 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
             a = *bxGetDoubles(prhs[0]);
         
         bex::__bxPrintf("\nprinting a...");
-        s = "\na = " + to_string(a.real()) + ", " + to_string(a.imag()) + "\n";
-        bex::__bxPrintf("\nprinting string...");
-        bex::__bxErrMsgTxt(s.c_str());
+        bex::__bxPrintf(("\na = " + to_string(a.real()) + ", " + to_string(a.imag()) + "\n").c_str());
 
         if (bxIsComplexDouble(prhs[1]))
             b = *(std::complex<double> *)bxGetComplexDoubles(prhs[1]);
@@ -132,9 +126,10 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
         bex::__bxPrintf(("\nb = " + to_string(b.real()) + "\n").c_str());
 
         baSize z_M = bxGetM(prhs[2]), z_N = bxGetN(prhs[2]);
+        bex::__bxPrintf(("\nz_M = " + to_string(z_M) + ", z_N = " + to_string(z_N)).c_str());
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxCOMPLEX);
         std::complex<double> *py = (std::complex<double> *)bxGetComplexDoubles(plhs[0]);
-        bex::__bxPrintf("\npy 创建完成！\n");
+        bex::__bxErrMsgTxt("\npy 创建完成！\n");
 
         if (bxIsComplexDouble(prhs[2])) {
             std::complex<double> *pz = (std::complex<double> *)bxGetComplexDoubles(plhs[2]);
@@ -149,6 +144,7 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
             double *pz = bxGetDoubles(plhs[2]);
             bex::__bxPrintf("\nget double *pz 完成！\n");
             bex::__bxPrintf(("\nz = " + to_string(*pz) + "\n").c_str());
+            bex::__bxErrMsgTxt("\n调用 complex arb_hypergeom1F1...\n");
             for (baSize i = 0; i < z_M*z_N; ++i) {
                 bex::__bxErrMsgTxt("\n调用 complex arb_hypergeom1F1...\n");
                 py[i] = slisc::arb_hypergeom1F1(a, b, pz[i]);
