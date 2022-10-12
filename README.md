@@ -6,8 +6,8 @@
 * 另外用到了作者的个人计算库 [SLISC0](https://github.com/MacroUniverse/SLISC0) 欢迎来 star :)
 
 ## 已完成
-* 部分完成了 `hypergeom` 函数， 输入输出双精度实数或者复数。
-* `hypergeom(a,b,z)` 的使用说明见[这里](https://www.mathworks.com/help/symbolic/hypergeom.html)， 但目前 `a,b` 不支持向量， `z` 支持向量/矩阵。 例子： `hypergeom(1.1+0.1i, 2.2, [2.4-0.1i, 1.5])`： 这相当于分别使用 `hypergeom(1.1+0.1i, 2.2, 2.4-0.1i)` 和 `hypergeom(1.1+0.1i, 2.2, 1.5)`
+* 超几何函数 `hypergeom(a,b,z)`： 部分完成， 输入输出双精度实数或者复数。 使用说明见[这里](https://www.mathworks.com/help/symbolic/hypergeom.html)， 但目前 `a,b` 不支持向量， `z` 支持向量/矩阵。 例子： `hypergeom(1.1+0.1i, 2.2, [2.4-0.1i, 1.5])`： 这相当于分别使用 `hypergeom(1.1+0.1i, 2.2, 2.4-0.1i)` 和 `hypergeom(1.1+0.1i, 2.2, 1.5)`。 另见 `test.m`
+* Γ 函数 `gammaC(z)`： 完成， 输入输出双精度实数或者复数矩阵。
 
 ## TODO
 * 实现其他特殊函数， 以及任意精度版本
