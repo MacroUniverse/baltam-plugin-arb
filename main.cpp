@@ -21,6 +21,7 @@
 #include <complex>
 #include "bex/bex.hpp"
 #include "SLISC/hypergeom.h"
+#include "SLISC/coulomb.h"
 #include "bex/bex.import.hpp"
 
 #define PLUGIN_NAME "arb"
@@ -30,9 +31,13 @@ using namespace baltam;
 // double precision hypergeometric function, accurate to the last digit
 // only supports 1F1 (real or complex params) for now
 void hypergeom(int, bxArray*[], int, const bxArray*[]);
+void gammaC(int, bxArray*[], int, const bxArray*[]);
 
 static const char * hypergeom_help =
     "详见 Matlab 的 hypergeom 函数文档。";
+
+static const char * gammaC_help =
+    "复参数的 gamma 函数（也支持实数）。";
 
 BALTAM_BEX_DEFINE_FCN_VARS
 
@@ -50,6 +55,7 @@ int bxPluginFini(){ return 0; }
 
 static bexfun_info_t flist[] = {
     {"hypergeom", hypergeom, hypergeom_help},
+    {"gammaC", gammaC, gammaC_help},
     {"", nullptr, nullptr}
 };
 
@@ -65,7 +71,7 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     // 【不管用】 cout << "测试一下 cout 管不管用" << endl;
 
     if (nrhs != 3)
-        bxErrMsgTxt("用法： hypergeom(a, b, z)， 其中 a, b 为标量， z 为实数或复数向量。");
+        bxErrMsgTxt("用法： hypergeom(a, b, z)， 其中 a, b 为标量， z 为实数或复数矩阵。");
 
     bool arg_comp[3]; bool has_comp = false;
     for (int i = 0; i < 3; ++i) {
@@ -77,7 +83,7 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
             bxErrMsgTxt("参数必须是双精度实数或复数！");
     }
     if (bxGetM(prhs[0])*bxGetN(prhs[0]) != 1 || bxGetM(prhs[1])*bxGetN(prhs[1]) != 1)
-        bxErrMsgTxt("用法： hypergeom(a, b, z)， 其中 a, b 为标量， z 为实数或复数向量。");
+        bxErrMsgTxt("用法： hypergeom(a, b, z)， 其中 a, b 为标量， z 为实数或复数矩阵。");
 
     if (nlhs > 1)
         bxErrMsgTxt("只允许 <= 1 个输出");
@@ -118,6 +124,44 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
             double *pz = bxGetDoubles(prhs[2]);
             for (baSize i = 0; i < z_M*z_N; ++i)
                 py[i] = arb_hypergeom1F1(a, b, pz[i]);
+        }
+    }
+}
+
+void gammaC(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
+    using namespace slisc;
+
+    if (nrhs != 1)
+        bxErrMsgTxt("用法： gammaC(z)， 其中 z 为实数或复数矩阵。");
+
+    bool is_comp;
+    if (bxIsComplexDouble(prhs[0]))
+        is_comp = true;
+    else if (bxIsRealDouble(prhs[0]))
+        is_comp = false;
+    else
+        bxErrMsgTxt("参数必须是双精度实数或复数！");
+
+    if (nlhs > 1)
+        bxErrMsgTxt("只允许 <= 1 个输出");
+    baSize z_M = bxGetM(prhs[0]), z_N = bxGetN(prhs[0]);
+
+    if (!is_comp) { // real args
+        double *pz = bxGetDoubles(prhs[0]);
+        plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxREAL);
+        double *py = bxGetDoubles(plhs[0]);
+        for (baSize i = 0; i < z_M*z_N; ++i)
+            py[i] = real(arb_gamma(pz[i]));
+    }
+    else { // complex args
+        plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxCOMPLEX);
+        Comp *pz = (Comp *)bxGetComplexDoubles(prhs[0]);
+        Comp *py = (Comp *)bxGetComplexDoubles(plhs[0]);
+        for (baSize i = 0; i < z_M*z_N; ++i) {
+            if (pz[i].imag() == 0)
+                py[i] = arb_gamma(pz[i].real());
+            else
+                py[i] = arb_gamma(pz[i]);
         }
     }
 }
