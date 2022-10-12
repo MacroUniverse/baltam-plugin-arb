@@ -32,7 +32,8 @@ using namespace baltam;
 // only supports 1F1 (real or complex params) for now
 void hypergeom(int, bxArray*[], int, const bxArray*[]);
 void gammaC(int, bxArray*[], int, const bxArray*[]);
-void lgamma(int, bxArray*[], int, const bxArray*[]);;
+void lgamma(int, bxArray*[], int, const bxArray*[]);
+void coulombF(int, bxArray*[], int, const bxArray*[]);
 
 static const char * hypergeom_help =
     "详见 Matlab 的 hypergeom 函数文档。";
@@ -42,6 +43,9 @@ static const char * gammaC_help =
 
 static const char * lgamma_help =
     "log(gammaC())";
+
+static const char * coulombF_help =
+    "第一类库伦函数";
 
 BALTAM_BEX_DEFINE_FCN_VARS
 
@@ -61,13 +65,13 @@ static bexfun_info_t flist[] = {
     {"hypergeom", hypergeom, hypergeom_help},
     {"gammaC", gammaC, gammaC_help},
     {"lgamma", lgamma, lgamma_help},
+    {"coulombF", coulombF, coulombF_help},
     {"", nullptr, nullptr}
 };
 
 bexfun_info_t * bxPluginFunctions() {
     return flist;
 }
-
 
 void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     using namespace slisc;
@@ -205,6 +209,65 @@ void lgamma(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
                 py[i] = arb_lngamma(pz[i].real());
             else
                 py[i] = arb_lngamma(pz[i]);
+        }
+    }
+}
+
+void coulombF(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
+    using namespace slisc;
+    if (nrhs != 3)
+        bxErrMsgTxt("用法： coulombF(l, eta, z)， 其中 l, eta 为标量， z 为实数或复数矩阵。");
+
+    bool arg_comp[3]; bool has_comp = false;
+    for (int i = 0; i < 3; ++i) {
+        if (bxIsComplexDouble(prhs[i]))
+            has_comp = arg_comp[i] = true;
+        else if (bxIsRealDouble(prhs[i]))
+            arg_comp[i] = false;
+        else
+            bxErrMsgTxt("参数必须是双精度实数或复数！");
+    }
+    if (bxGetM(prhs[0])*bxGetN(prhs[0]) != 1 || bxGetM(prhs[1])*bxGetN(prhs[1]) != 1)
+        bxErrMsgTxt("用法： coulombF(l, eta, z)， 其中 l, eta 为标量， z 为实数或复数矩阵。");
+
+    if (nlhs > 1)
+        bxErrMsgTxt("只允许 <= 1 个输出");
+    baSize z_M = bxGetM(prhs[2]), z_N = bxGetN(prhs[2]);
+
+    if (!has_comp) { // real args
+        double l = *bxGetDoubles(prhs[0]);
+        double eta = *bxGetDoubles(prhs[1]);
+        double *pz = bxGetDoubles(prhs[2]);
+
+        plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxREAL);
+        double *py = bxGetDoubles(plhs[0]);
+        for (baSize i = 0; i < z_M*z_N; ++i)
+            py[i] = arb_coulombF(l, eta, pz[i]);
+    }
+    else { // complex args
+        Comp l, eta;
+        if (arg_comp[0])
+            l = *((Comp *)bxGetComplexDoubles(prhs[0]));
+        else
+            l = *bxGetDoubles(prhs[0]);
+
+        if (arg_comp[1])
+            eta = *(Comp *)bxGetComplexDoubles(prhs[1]);
+        else
+            eta = *bxGetDoubles(prhs[1]);
+
+        plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxCOMPLEX);
+        Comp *py = (Comp *)bxGetComplexDoubles(plhs[0]);
+
+        if (arg_comp[2]) {
+            Comp *pz = (Comp *)bxGetComplexDoubles(prhs[2]);
+            for (baSize i = 0; i < z_M*z_N; ++i)
+                py[i] = acb_coulombF(l, eta, pz[i]);
+        }
+        else {
+            double *pz = bxGetDoubles(prhs[2]);
+            for (baSize i = 0; i < z_M*z_N; ++i)
+                py[i] = acb_coulombF(l, eta, pz[i]);
         }
     }
 }
