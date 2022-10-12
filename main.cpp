@@ -53,7 +53,7 @@ static bexfun_info_t flist[] = {
     {"", nullptr, nullptr}
 };
 
-bexfun_info_t * bxPluginFunctions(){
+bexfun_info_t * bxPluginFunctions() {
     return flist;
 }
 
@@ -67,11 +67,13 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     if (nrhs != 3)
         bxErrMsgTxt("用法： hypergeom(a, b, z)， 其中 a, b 为标量， z 为实数或复数向量。");
 
-    vector<bool> arg_comp(3, false); bool has_comp = false;
+    bool arg_comp[3]; bool has_comp = false;
     for (int i = 0; i < 3; ++i) {
         if (bxIsComplexDouble(prhs[i]))
             has_comp = arg_comp[i] = true;
-        else if (!bxIsRealDouble(prhs[i]))
+        else if (bxIsRealDouble(prhs[i]))
+            arg_comp[i] = false;
+        else
             bxErrMsgTxt("参数必须是双精度实数或复数！");
     }
     if (bxGetM(prhs[0])*bxGetN(prhs[0]) != 1 || bxGetM(prhs[1])*bxGetN(prhs[1]) != 1)
@@ -94,12 +96,12 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     }
     else { // complex args
         Comp a, b;
-        if (bxIsComplexDouble(prhs[0]))
+        if (arg_comp[0])
             a = *((Comp *)bxGetComplexDoubles(prhs[0]));
         else
             a = *bxGetDoubles(prhs[0]);
 
-        if (bxIsComplexDouble(prhs[1]))
+        if (arg_comp[1])
             b = *(Comp *)bxGetComplexDoubles(prhs[1]);
         else
             b = *bxGetDoubles(prhs[1]);
@@ -107,7 +109,7 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxCOMPLEX);
         Comp *py = (Comp *)bxGetComplexDoubles(plhs[0]);
 
-        if (bxIsComplexDouble(prhs[2])) {
+        if (arg_comp[2]) {
             Comp *pz = (Comp *)bxGetComplexDoubles(prhs[2]);
             for (baSize i = 0; i < z_M*z_N; ++i)
                 py[i] = arb_hypergeom1F1(a, b, pz[i]);
