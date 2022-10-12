@@ -72,29 +72,90 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
 #endif
 
     if (nrhs != 3) {
-        bex::__bxErrMsgTxt("用法： y = hypergeom(a, b, c)");
+        bex::__bxErrMsgTxt("用法： w = hypergeom(a, b, z)");
         return;
     }
 
-    double *pa = bxGetDoubles(prhs[0]);
-    double *pb = bxGetDoubles(prhs[1]);
-    double *pz = bxGetDoubles(prhs[2]);
-    baSize z_M = bxGetM(prhs[2]), z_N = bxGetN(prhs[2]);
-
-    double a = *pa, b = *pb, c = *pz;
-    // bex::__bxPrintf(("a = " + to_string(a) + "\n").c_str());
-    // bex::__bxPrintf(("b = " + to_string(b) + "\n").c_str());
-    // bex::__bxPrintf(("c = " + to_string(c) + "\n").c_str());
+    bool has_comp = false;
+    for (int i = 0; i < 3; ++i) {
+        if (bxIsComplexDouble(prhs[i]))
+            has_comp = true;
+        else if (!bxIsRealDouble(prhs[i]))
+            bex::__bxErrMsgTxt("参数必须是双精度实数或复数！");
+    }
+    bex::__bxPrintf("\nhas_comp 完成！\n");
 
     if (nlhs > 1) {
         bex::__bxErrMsgTxt("只允许 <= 1 个输出");
         return;
     }
 
-    plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxREAL); // bxCOMPLEX
-    double *py = bxGetDoubles(plhs[0]);
-    for (baSize i = 0; i < z_M*z_N; ++i)
-        py[i] = slisc::arb_hypergeom1F1(a, b, pz[i]);
+    if (!has_comp) {
+        double a = *bxGetDoubles(prhs[0]);
+        double b = *bxGetDoubles(prhs[1]);
+        double *pz = bxGetDoubles(prhs[2]);
+        baSize z_M = bxGetM(prhs[2]), z_N = bxGetN(prhs[2]);
+
+        // bex::__bxPrintf(("a = " + to_string(a) + "\n").c_str());
+        // bex::__bxPrintf(("b = " + to_string(b) + "\n").c_str());
+        // bex::__bxPrintf(("c = " + to_string(c) + "\n").c_str());
+
+        plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxREAL);
+        double *py = bxGetDoubles(plhs[0]);
+        for (baSize i = 0; i < z_M*z_N; ++i)
+            py[i] = slisc::arb_hypergeom1F1(a, b, pz[i]);
+    }
+    else {
+        bex::__bxPrintf("\nusing complex！\n");
+        std::complex<double> a, b;
+        a = std::complex<double>(1.123,2.234);
+        std::string s = "\na = " + to_string(a.real()) + ", " + to_string(a.imag()) + "\n";
+        bex::__bxPrintf("\nprinting string...");
+        bex::__bxErrMsgTxt(s.c_str());
+
+        if (bxIsComplexDouble(prhs[0])) {
+            a = *((std::complex<double> *)bxGetComplexDoubles(prhs[0]));
+            bex::__bxPrintf("\ngot complex double a!");
+        }
+        else
+            a = *bxGetDoubles(prhs[0]);
+        
+        bex::__bxPrintf("\nprinting a...");
+        s = "\na = " + to_string(a.real()) + ", " + to_string(a.imag()) + "\n";
+        bex::__bxPrintf("\nprinting string...");
+        bex::__bxErrMsgTxt(s.c_str());
+
+        if (bxIsComplexDouble(prhs[1]))
+            b = *(std::complex<double> *)bxGetComplexDoubles(prhs[1]);
+        else
+            b = *bxGetDoubles(prhs[1]);
+        bex::__bxPrintf(("\nb = " + to_string(b.real()) + "\n").c_str());
+
+        baSize z_M = bxGetM(prhs[2]), z_N = bxGetN(prhs[2]);
+        plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxCOMPLEX);
+        std::complex<double> *py = (std::complex<double> *)bxGetComplexDoubles(plhs[0]);
+        bex::__bxPrintf("\npy 创建完成！\n");
+
+        if (bxIsComplexDouble(prhs[2])) {
+            std::complex<double> *pz = (std::complex<double> *)bxGetComplexDoubles(plhs[2]);
+            bex::__bxPrintf("\nget Comp *pz 完成！\n");
+            for (baSize i = 0; i < z_M*z_N; ++i) {
+                bex::__bxErrMsgTxt("\n调用 complex arb_hypergeom1F1...\n");
+                py[i] = slisc::arb_hypergeom1F1(a, b, pz[i]);
+            }
+            bex::__bxPrintf("\ncomplex z 完成！\n");
+        }
+        else {
+            double *pz = bxGetDoubles(plhs[2]);
+            bex::__bxPrintf("\nget double *pz 完成！\n");
+            bex::__bxPrintf(("\nz = " + to_string(*pz) + "\n").c_str());
+            for (baSize i = 0; i < z_M*z_N; ++i) {
+                bex::__bxErrMsgTxt("\n调用 complex arb_hypergeom1F1...\n");
+                py[i] = slisc::arb_hypergeom1F1(a, b, pz[i]);
+            }
+            bex::__bxPrintf("\nreal z 完成！\n");
+        }
+    }
 
     // bex::__bxPrintf("hypergeom 终止！\n");
     // bex::__bxErrMsgTxt("调试终止!");
