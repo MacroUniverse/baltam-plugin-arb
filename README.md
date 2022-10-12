@@ -3,6 +3,8 @@
 * 另外用到了作者的个人计算库 [SLISC0](https://github.com/MacroUniverse/SLISC0) 欢迎来 star
 
 * (完成了 `hypergeom`) 先试试导入几个特殊函数， 例如 `gamma` 函数， `hypergeom`， 输出双精度类型就好。
+* `hypergeom(a,b,z)` 的使用说明见[这里](https://www.mathworks.com/help/symbolic/hypergeom.html)， 但目前 `a,b` 不支持向量， `z` 支持向量/矩阵。 例子： `hypergeom(1.1+0.1i, 2.2, [2.4-0.1i, 1.5])`
+
 ## TODO
 * 然后实现 `digits()` 函数， 重载 arf 类型的一些算符 `+, -, *, /` 等
 
