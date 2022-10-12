@@ -64,7 +64,7 @@ bexfun_info_t * bxPluginFunctions(){
 
 
 void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
-    using namespace std;
+    using namespace slisc;
     // 【管用】 bex::__bxPrintf("\n测试 hypergeom！\n");
     // 【不管用】 bxPrintf("测试一下 bxPrintf 管不管用");
     // 【不管用】 cout << "测试一下 cout 管不管用" << endl;
@@ -103,25 +103,25 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
         }
     }
     else {
-        complex<double> a, b;
+        Comp a, b;
 
         if (bxIsComplexDouble(prhs[0])) {
-            a = *((complex<double> *)bxGetComplexDoubles(prhs[0]));
+            a = *((Comp *)bxGetComplexDoubles(prhs[0]));
         }
         else
             a = *bxGetDoubles(prhs[0]);
 
         if (bxIsComplexDouble(prhs[1]))
-            b = *(complex<double> *)bxGetComplexDoubles(prhs[1]);
+            b = *(Comp *)bxGetComplexDoubles(prhs[1]);
         else
             b = *bxGetDoubles(prhs[1]);
 
         baSize z_M = bxGetM(prhs[2]), z_N = bxGetN(prhs[2]);
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxCOMPLEX);
-        complex<double> *py = (complex<double> *)bxGetComplexDoubles(plhs[0]);
+        Comp *py = (Comp *)bxGetComplexDoubles(plhs[0]);
 
         if (bxIsComplexDouble(prhs[2])) {
-            complex<double> *pz = (complex<double> *)bxGetComplexDoubles(prhs[2]);
+            Comp *pz = (Comp *)bxGetComplexDoubles(prhs[2]);
             for (baSize i = 0; i < z_M*z_N; ++i) {
                 py[i] = slisc::arb_hypergeom1F1(a, b, pz[i]);
             }
@@ -135,10 +135,12 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     }
 }
 
+// 用于直接编译成可执行文件进行调试， 而不是动态链接库
 #if defined(BV_USE_DYN_LOADER) && defined(BV_BUILD_EXE)
 int main(){
-    std::vector<const bxArray*> in_args;
-    std::vector<bxArray*> out_args;
+    using namespace slisc;
+    vector<const bxArray*> in_args;
+    vector<bxArray*> out_args;
     // 手动调用 init 函数
 #if defined(__WIN32__) || defined(__CYGWIN__) || defined(__MINGW32__)
     void * handle = (void*)LoadLibrary("libbex.dll");
@@ -148,69 +150,31 @@ int main(){
 
     bxPluginInitLib(handle);
     // 这里 addCXXClass 其实不会被执行，因为已经绕过了插件管理器
-    bxPluginInit(0, nullptr);
-    std::cout << "bex 库已载入" << std::endl;
+    bxPluginInit(0, NULL);
+    cout << "bex 库已载入" << endl;
 
     // 从内核创建数据
-    bxArray *A = bex::__bxCreateNumericMatrix(1, 1, bxINT_CLASS, bxREAL);
-    bxArray *B = bex::__bxCreateNumericMatrix(1, 1, bxDOUBLE_CLASS, bxREAL);
-    bxArray *C = bex::__bxCreateString("test");
+    bxArray *a = bex::__bxCreateNumericMatrix(1, 1, bxDOUBLE_CLASS, bxREAL);
+    bxArray *b = bex::__bxCreateNumericMatrix(1, 1, bxDOUBLE_CLASS, bxCOMPLEX);
+    bxArray *z = bex::__bxCreateNumericMatrix(1, 2, bxDOUBLE_CLASS, bxCOMPLEX);
 
     // 修改数据
-    int *pA = bex::__bxGetInt32s(A);
-    *pA = 42;
-    double *pB = bex::__bxGetDoubles(B);
-    *pB = 3.14;
+    *bex::__bxGetDoubles(a) = 1.6;
+    Comp *b = (Comp *)bex::__bxGetDoubles(b);
+    b = Comp(1.3, 0.6);
+    Comp *z = (Comp *)bex::__bxGetDoubles(z);
+    z[0] = Comp(1.3, 2.1);
+    z[1] = Comp(-0.2, 2.4);
 
     // 调用 bv_create
-    in_args.push_back(A);
-    in_args.push_back(B);
-    in_args.push_back(C);
-    out_args.push_back(nullptr);
-    bv_create(out_args.size(), out_args.data(), in_args.size(), in_args.data());
-
-    bxArray *V = out_args[0];
-
-    // 调用 bv_size
-    in_args.clear();
-    out_args.clear();
-    in_args.push_back(V);
-    out_args.push_back(nullptr);
-    bv_size(out_args.size(), out_args.data(), in_args.size(), in_args.data());
-
-    bxArray *N = out_args[0];
-
-    std::cout << "数组的大小是：" << static_cast<int>(*bex::__bxGetDoubles(N)) << std::endl;
-
-    // 调用 bv_show
-    in_args.clear();
-    out_args.clear();
-    in_args.push_back(V);
-    bv_show(out_args.size(), out_args.data(), in_args.size(), in_args.data());
-
-    // 调用 bv_at
-    in_args.clear();
-    out_args.clear();
-    bxArray *ii = bex::__bxCreateNumericMatrix(1, 1, bxDOUBLE_CLASS, bxREAL);
-    double *pii = bex::__bxGetDoubles(ii);
-    *pii = 2;
-    in_args.push_back(V);
-    in_args.push_back(ii);
-    out_args.push_back(nullptr);
-    bv_at(out_args.size(), out_args.data(), in_args.size(), in_args.data());
-
-    bxArray *ch = out_args[0];
-    char *t = bex::__bxGetChars(ch);
-    std::cout << t[0] << t[1] << t[2] << t[3] << std::endl;
-
+    in_args.push_back(a); in_args.push_back(b);
+    out_args.push_back(NULL);
+    hypergeom(out_args.size(), out_args.data(), in_args.size(), in_args.data());
+    
     // 释放内存
-    bex::__bxDestroyArray(A);
-    bex::__bxDestroyArray(B);
-    bex::__bxDestroyArray(C);
-    bex::__bxDestroyArray(V);
-    bex::__bxDestroyArray(N);
-    bex::__bxDestroyArray(ii);
-    bex::__bxDestroyArray(ch);
+    bex::__bxDestroyArray(a);
+    bex::__bxDestroyArray(b);
+    bex::__bxDestroyArray(z);
 
 #if defined(__WIN32__) || defined(__CYGWIN__) || defined(__MINGW32__)
     FreeLibrary((HMODULE)handle);
