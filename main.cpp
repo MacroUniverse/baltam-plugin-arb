@@ -32,12 +32,16 @@ using namespace baltam;
 // only supports 1F1 (real or complex params) for now
 void hypergeom(int, bxArray*[], int, const bxArray*[]);
 void gammaC(int, bxArray*[], int, const bxArray*[]);
+void lgamma(int, bxArray*[], int, const bxArray*[]);;
 
 static const char * hypergeom_help =
     "详见 Matlab 的 hypergeom 函数文档。";
 
 static const char * gammaC_help =
     "复参数的 gamma 函数（也支持实数）。";
+
+static const char * lgamma_help =
+    "log(gammaC())";
 
 BALTAM_BEX_DEFINE_FCN_VARS
 
@@ -56,6 +60,7 @@ int bxPluginFini(){ return 0; }
 static bexfun_info_t flist[] = {
     {"hypergeom", hypergeom, hypergeom_help},
     {"gammaC", gammaC, gammaC_help},
+    {"lgamma", lgamma, lgamma_help},
     {"", nullptr, nullptr}
 };
 
@@ -151,7 +156,7 @@ void gammaC(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxREAL);
         double *py = bxGetDoubles(plhs[0]);
         for (baSize i = 0; i < z_M*z_N; ++i)
-            py[i] = real(arb_gamma(pz[i]));
+            py[i] = arb_gamma(pz[i]);
     }
     else { // complex args
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxCOMPLEX);
@@ -162,6 +167,44 @@ void gammaC(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
                 py[i] = arb_gamma(pz[i].real());
             else
                 py[i] = arb_gamma(pz[i]);
+        }
+    }
+}
+
+void lgamma(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
+    using namespace slisc;
+
+    if (nrhs != 1)
+        bxErrMsgTxt("用法： gammaC(z)， 其中 z 为实数或复数矩阵。");
+
+    bool is_comp;
+    if (bxIsComplexDouble(prhs[0]))
+        is_comp = true;
+    else if (bxIsRealDouble(prhs[0]))
+        is_comp = false;
+    else
+        bxErrMsgTxt("参数必须是双精度实数或复数！");
+
+    if (nlhs > 1)
+        bxErrMsgTxt("只允许 <= 1 个输出");
+    baSize z_M = bxGetM(prhs[0]), z_N = bxGetN(prhs[0]);
+
+    if (!is_comp) { // real args
+        double *pz = bxGetDoubles(prhs[0]);
+        plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxREAL);
+        double *py = bxGetDoubles(plhs[0]);
+        for (baSize i = 0; i < z_M*z_N; ++i)
+            py[i] = arb_lngamma(pz[i]);
+    }
+    else { // complex args
+        plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxCOMPLEX);
+        Comp *pz = (Comp *)bxGetComplexDoubles(prhs[0]);
+        Comp *py = (Comp *)bxGetComplexDoubles(plhs[0]);
+        for (baSize i = 0; i < z_M*z_N; ++i) {
+            if (pz[i].imag() == 0)
+                py[i] = arb_lngamma(pz[i].real());
+            else
+                py[i] = arb_lngamma(pz[i]);
         }
     }
 }
