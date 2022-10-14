@@ -108,7 +108,11 @@ string BigInt::classname() const {
 }
 
 int bxPluginInit(int, const bxArray*[]) {
-    bxAddCXXClass<BigInt>(PLUGIN_NAME, bex::__bxAddCXXClass_impl);
+    int sid = bxAddCXXClass<BigInt>(PLUGIN_NAME, bex::__bxAddCXXClass_impl);
+    bxRegisterBinaryOperator(PLUGIN_NAME, "+", sid, sid, BigInt_add);
+    bxRegisterBinaryOperator(PLUGIN_NAME, "-", sid, sid, BigInt_sub);
+    bxRegisterBinaryOperator(PLUGIN_NAME, "*", sid, sid, BigInt_mul);
+    bxRegisterBinaryOperator(PLUGIN_NAME, "/", sid, sid, BigInt_div);
     return 0;
 }
 
