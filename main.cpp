@@ -106,6 +106,7 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
 
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxREAL);
         double *py = bxGetDoubles(plhs[0]);
+#pragma omp parallel for
         for (baSize i = 0; i < z_M*z_N; ++i)
             py[i] = arb_hypergeom1F1(a, b, pz[i]);
     }
@@ -126,11 +127,13 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
 
         if (arg_comp[2]) {
             Comp *pz = (Comp *)bxGetComplexDoubles(prhs[2]);
+#pragma omp parallel for
             for (baSize i = 0; i < z_M*z_N; ++i)
                 py[i] = arb_hypergeom1F1(a, b, pz[i]);
         }
         else {
             double *pz = bxGetDoubles(prhs[2]);
+#pragma omp parallel for
             for (baSize i = 0; i < z_M*z_N; ++i)
                 py[i] = arb_hypergeom1F1(a, b, pz[i]);
         }
@@ -159,6 +162,7 @@ void gammaC(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
         double *pz = bxGetDoubles(prhs[0]);
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxREAL);
         double *py = bxGetDoubles(plhs[0]);
+#pragma omp parallel for
         for (baSize i = 0; i < z_M*z_N; ++i)
             py[i] = arb_gamma(pz[i]);
     }
@@ -166,6 +170,7 @@ void gammaC(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxCOMPLEX);
         Comp *pz = (Comp *)bxGetComplexDoubles(prhs[0]);
         Comp *py = (Comp *)bxGetComplexDoubles(plhs[0]);
+#pragma omp parallel for
         for (baSize i = 0; i < z_M*z_N; ++i) {
             if (pz[i].imag() == 0)
                 py[i] = arb_gamma(pz[i].real());
@@ -197,6 +202,7 @@ void lgamma(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
         double *pz = bxGetDoubles(prhs[0]);
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxREAL);
         double *py = bxGetDoubles(plhs[0]);
+#pragma omp parallel for
         for (baSize i = 0; i < z_M*z_N; ++i)
             py[i] = arb_lngamma(pz[i]);
     }
@@ -204,6 +210,7 @@ void lgamma(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxCOMPLEX);
         Comp *pz = (Comp *)bxGetComplexDoubles(prhs[0]);
         Comp *py = (Comp *)bxGetComplexDoubles(plhs[0]);
+#pragma omp parallel for
         for (baSize i = 0; i < z_M*z_N; ++i) {
             if (pz[i].imag() == 0)
                 py[i] = arb_lngamma(pz[i].real());
@@ -241,6 +248,7 @@ void coulombF(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
 
         plhs[0] = bxCreateDoubleMatrix(z_M, z_N, bxREAL);
         double *py = bxGetDoubles(plhs[0]);
+#pragma omp parallel for
         for (baSize i = 0; i < z_M*z_N; ++i)
             py[i] = arb_coulombF(l, eta, pz[i]);
     }
@@ -261,11 +269,13 @@ void coulombF(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
 
         if (arg_comp[2]) {
             Comp *pz = (Comp *)bxGetComplexDoubles(prhs[2]);
+#pragma omp parallel for
             for (baSize i = 0; i < z_M*z_N; ++i)
                 py[i] = acb_coulombF(l, eta, pz[i]);
         }
         else {
             double *pz = bxGetDoubles(prhs[2]);
+#pragma omp parallel for
             for (baSize i = 0; i < z_M*z_N; ++i)
                 py[i] = acb_coulombF(l, eta, pz[i]);
         }
