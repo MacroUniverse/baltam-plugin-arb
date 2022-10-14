@@ -27,6 +27,7 @@
 #define PLUGIN_NAME "arb"
 
 using namespace baltam;
+using namespace slisc;
 
 // double precision hypergeometric function, accurate to the last digit
 // only supports 1F1 (real or complex params) for now
@@ -34,6 +35,11 @@ void hypergeom(int, bxArray*[], int, const bxArray*[]);
 void gammaC(int, bxArray*[], int, const bxArray*[]);
 void lgamma(int, bxArray*[], int, const bxArray*[]);
 void coulombF(int, bxArray*[], int, const bxArray*[]);
+void BigInt_create(int, bxArray*[], int, const bxArray*[]);
+void BigInt_add(int, bxArray*[], int, const bxArray*[]);
+void BigInt_sub(int, bxArray*[], int, const bxArray*[]);
+void BigInt_mul(int, bxArray*[], int, const bxArray*[]);
+void BigInt_div(int, bxArray*[], int, const bxArray*[]);
 
 static const char * hypergeom_help =
     "详见 Matlab 的 hypergeom 函数文档。";
@@ -47,6 +53,21 @@ static const char * lgamma_help =
 static const char * coulombF_help =
     "第一类库伦函数";
 
+static const char * BigInt_create_help =
+    "生成一个大整数";
+
+static const char * BigInt_add_help =
+    "大整数相加";
+
+static const char * BigInt_sub_help =
+    "大整数相减";
+
+static const char * BigInt_mul_help =
+    "大整数相乘";
+
+static const char * BigInt_div_help =
+    "大整数相除";
+
 BALTAM_BEX_DEFINE_FCN_VARS
 
 int bxPluginInitLib(void * hdl){
@@ -55,7 +76,39 @@ int bxPluginInitLib(void * hdl){
     return 0;
 }
 
-int bxPluginInit(int, const bxArray*[]){
+struct BigInt : public extern_obj_base {
+    long long data;
+    BALTAM_LOCAL static int ID;
+    extern_obj_base *dup() const override;
+    ~BigInt() override;
+    // 可选：转化为字符串的实现
+    string to_string() const override;
+    // 自定义类型名字
+    string classname() const override;
+};
+
+int BigInt::ID = 0;
+
+extern_obj_base *BigInt::dup() const {
+    BigInt *ret = new BigInt(*this);
+    ret->data = data;
+    return ret;
+}
+
+BigInt::~BigInt() {}
+
+string BigInt::to_string() const {
+    stringstream ss;
+    ss << data;
+    return ss.str();
+}
+
+string BigInt::classname() const {
+    return "BigInt";
+}
+
+int bxPluginInit(int, const bxArray*[]) {
+    bxAddCXXClass<BigInt>(PLUGIN_NAME, bex::__bxAddCXXClass_impl);
     return 0;
 }
 
@@ -66,6 +119,11 @@ static bexfun_info_t flist[] = {
     {"gammaC", gammaC, gammaC_help},
     {"lgamma", lgamma, lgamma_help},
     {"coulombF", coulombF, coulombF_help},
+    {"BigInt_create", BigInt_create, BigInt_create_help},
+    {"BigInt_add", BigInt_add, BigInt_add_help},
+    {"BigInt_sub", BigInt_sub, BigInt_sub_help},
+    {"BigInt_mul", BigInt_mul, BigInt_mul_help},
+    {"BigInt_div", BigInt_div, BigInt_div_help},
     {"", nullptr, nullptr}
 };
 
@@ -73,8 +131,64 @@ bexfun_info_t * bxPluginFunctions() {
     return flist;
 }
 
+void BigInt_create(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
+    if (nlhs > 1 || nrhs != 1)
+        bxErrMsgTxt("用法： BigInt(整数或字符串表示的整数)");
+
+    BigInt * ret = bxNewCXXObject<BigInt>();
+    for (int i = 0; i < nrhs; ++i) {
+        double *px = bxGetDoubles(prhs[0]);
+        ret->data = px[0];
+    }
+    plhs[0] = bex::__bxCreateExtObj_v(ret);
+}
+
+void BigInt_add(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
+    if (nlhs > 1 || nrhs != 2)
+        bxErrMsgTxt("用法： BigInt_add(大整数, 大整数)");
+    
+    BigInt *px = bxGetExtObj<BigInt>(prhs[0], bex::__bxGetExtObj_impl);
+    BigInt *py = bxGetExtObj<BigInt>(prhs[1], bex::__bxGetExtObj_impl);
+    BigInt * ret = bxNewCXXObject<BigInt>();
+    ret->data = px->data + py->data;
+    plhs[0] = bex::__bxCreateExtObj_v(ret);
+}
+
+void BigInt_sub(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
+    if (nlhs > 1 || nrhs != 2)
+        bxErrMsgTxt("用法： BigInt_sub(大整数, 大整数)");
+    
+    BigInt *px = bxGetExtObj<BigInt>(prhs[0], bex::__bxGetExtObj_impl);
+    BigInt *py = bxGetExtObj<BigInt>(prhs[1], bex::__bxGetExtObj_impl);
+    BigInt * ret = bxNewCXXObject<BigInt>();
+    ret->data = px->data - py->data;
+    plhs[0] = bex::__bxCreateExtObj_v(ret);
+}
+
+void BigInt_mul(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
+    if (nlhs > 1 || nrhs != 2)
+        bxErrMsgTxt("用法： BigInt_mul(大整数, 大整数)");
+    
+    BigInt *px = bxGetExtObj<BigInt>(prhs[0], bex::__bxGetExtObj_impl);
+    BigInt *py = bxGetExtObj<BigInt>(prhs[1], bex::__bxGetExtObj_impl);
+    BigInt * ret = bxNewCXXObject<BigInt>();
+    ret->data = px->data * py->data;
+    plhs[0] = bex::__bxCreateExtObj_v(ret);
+}
+
+void BigInt_div(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
+    if (nlhs > 1 || nrhs != 2)
+        bxErrMsgTxt("用法： BigInt_div(大整数, 大整数)");
+    
+    BigInt *px = bxGetExtObj<BigInt>(prhs[0], bex::__bxGetExtObj_impl);
+    BigInt *py = bxGetExtObj<BigInt>(prhs[1], bex::__bxGetExtObj_impl);
+    BigInt * ret = bxNewCXXObject<BigInt>();
+    ret->data = px->data / py->data;
+    plhs[0] = bex::__bxCreateExtObj_v(ret);
+}
+
 void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
-    using namespace slisc;
+    
     // bex::__bxPrintf("整数为 %ld， 浮点数为 %g， 字符串为 %s\n", 3, 3.1415926, "一些字符串");
     // bxPrintf("整数为 %ld， 浮点数为 %g， 字符串为 %s\n", 3, 3.1415926, "一些字符串");
     // 【不管用】 cout << "测试一下 cout 管不管用" << endl;
@@ -141,8 +255,6 @@ void hypergeom(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
 }
 
 void gammaC(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
-    using namespace slisc;
-
     if (nrhs != 1)
         bxErrMsgTxt("用法： gammaC(z)， 其中 z 为实数或复数矩阵。");
 
@@ -181,8 +293,6 @@ void gammaC(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
 }
 
 void lgamma(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
-    using namespace slisc;
-
     if (nrhs != 1)
         bxErrMsgTxt("用法： gammaC(z)， 其中 z 为实数或复数矩阵。");
 
@@ -221,7 +331,6 @@ void lgamma(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
 }
 
 void coulombF(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
-    using namespace slisc;
     if (nrhs != 3)
         bxErrMsgTxt("用法： coulombF(l, eta, z)， 其中 l, eta 为标量， z 为实数或复数矩阵。");
 
@@ -285,7 +394,6 @@ void coulombF(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
 // 用于直接编译成可执行文件进行调试， 而不是动态链接库
 #if defined(ARB_BUILD_EXE)
 int main(){
-    using namespace slisc;
     vector<const bxArray*> in_args;
     vector<bxArray*> out_args;
     // 手动调用 init 函数
