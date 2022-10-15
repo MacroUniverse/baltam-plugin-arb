@@ -66,12 +66,11 @@ val = [4.5882301380287638e-286
 if max(abs((coulombF(203, -0.1, [6; 10-0.1i]) - val)./val)) > eps
 	error('failed!');
 end
-	
+
 %% 测试 BigInt 大整数
-a = BigInt_create(123);
-b = BigInt_create(234);
+a = BigInt("1234567890223456789032345678904234567890");
+b = BigInt("8765432109776543210967654321095765432109");
 c = a + b;
-disp('c 是否等于 357?');
-c
+% disp('是否等于 99999...9?');
 
 unload_plugin('arb');

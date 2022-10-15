@@ -22,6 +22,7 @@
 #include "bex/bex.hpp"
 #include "SLISC/hypergeom.h"
 #include "SLISC/coulomb.h"
+#include "SLISC/arb_extension.h"
 #include "bex/bex.import.hpp"
 
 #define PLUGIN_NAME "arb"
@@ -77,8 +78,12 @@ int bxPluginInitLib(void * hdl){
 }
 
 struct BigInt : public extern_obj_base {
-    long long data;
+    Bint data;
     BALTAM_LOCAL static int ID;
+    BigInt() = default;
+    BigInt(Llong_I n): data(n) {}
+    BigInt(Doub_I x): data(Llong(round(x))) {}
+    BigInt(Str_I s): data(s) {}
     extern_obj_base *dup() const override;
     ~BigInt() override;
     // 可选：转化为字符串的实现
@@ -97,15 +102,9 @@ extern_obj_base *BigInt::dup() const {
 
 BigInt::~BigInt() {}
 
-string BigInt::to_string() const {
-    stringstream ss;
-    ss << data;
-    return ss.str();
-}
+string BigInt::to_string() const { return ::to_string(data); }
 
-string BigInt::classname() const {
-    return "BigInt";
-}
+string BigInt::classname() const { return "BigInt"; }
 
 int bxPluginInit(int, const bxArray*[]) {
     int sid = bxAddCXXClass<BigInt>(PLUGIN_NAME, bex::__bxAddCXXClass_impl);
@@ -116,14 +115,14 @@ int bxPluginInit(int, const bxArray*[]) {
     return 0;
 }
 
-int bxPluginFini(){ return 0; }
+int bxPluginFini(){ flint_cleanup(); return 0; }
 
 static bexfun_info_t flist[] = {
     {"hypergeom", hypergeom, hypergeom_help},
     {"gammaC", gammaC, gammaC_help},
     {"lgamma", lgamma, lgamma_help},
     {"coulombF", coulombF, coulombF_help},
-    {"BigInt_create", BigInt_create, BigInt_create_help},
+    {"BigInt", BigInt_create, BigInt_create_help},
     {"BigInt_add", BigInt_add, BigInt_add_help},
     {"BigInt_sub", BigInt_sub, BigInt_sub_help},
     {"BigInt_mul", BigInt_mul, BigInt_mul_help},
@@ -138,12 +137,11 @@ bexfun_info_t * bxPluginFunctions() {
 void BigInt_create(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     if (nlhs > 1 || nrhs != 1)
         bxErrMsgTxt("用法： BigInt(整数或字符串表示的整数)");
-
-    BigInt * ret = bxNewCXXObject<BigInt>();
-    for (int i = 0; i < nrhs; ++i) {
-        double *px = bxGetDoubles(prhs[0]);
-        ret->data = px[0];
-    }
+    BigInt * ret;
+    if (bxIsRealDouble(prhs[0]))
+        ret = bxNewCXXObject<BigInt>(*bxGetDoubles(prhs[0]));
+    else if (bxIsString(prhs[0]))
+        ret = bxNewCXXObject<BigInt>(bxGetStringDataPr(prhs[0]));
     plhs[0] = bex::__bxCreateExtObj_v(ret);
 }
 
@@ -154,7 +152,7 @@ void BigInt_add(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     BigInt *px = bxGetExtObj<BigInt>(prhs[0], bex::__bxGetExtObj_impl);
     BigInt *py = bxGetExtObj<BigInt>(prhs[1], bex::__bxGetExtObj_impl);
     BigInt * ret = bxNewCXXObject<BigInt>();
-    ret->data = px->data + py->data;
+    add(ret->data, px->data, py->data);
     plhs[0] = bex::__bxCreateExtObj_v(ret);
 }
 
@@ -165,7 +163,7 @@ void BigInt_sub(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     BigInt *px = bxGetExtObj<BigInt>(prhs[0], bex::__bxGetExtObj_impl);
     BigInt *py = bxGetExtObj<BigInt>(prhs[1], bex::__bxGetExtObj_impl);
     BigInt * ret = bxNewCXXObject<BigInt>();
-    ret->data = px->data - py->data;
+    sub(ret->data, px->data, py->data);
     plhs[0] = bex::__bxCreateExtObj_v(ret);
 }
 
@@ -176,7 +174,7 @@ void BigInt_mul(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     BigInt *px = bxGetExtObj<BigInt>(prhs[0], bex::__bxGetExtObj_impl);
     BigInt *py = bxGetExtObj<BigInt>(prhs[1], bex::__bxGetExtObj_impl);
     BigInt * ret = bxNewCXXObject<BigInt>();
-    ret->data = px->data * py->data;
+    mul(ret->data, px->data, py->data);
     plhs[0] = bex::__bxCreateExtObj_v(ret);
 }
 
@@ -187,7 +185,7 @@ void BigInt_div(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     BigInt *px = bxGetExtObj<BigInt>(prhs[0], bex::__bxGetExtObj_impl);
     BigInt *py = bxGetExtObj<BigInt>(prhs[1], bex::__bxGetExtObj_impl);
     BigInt * ret = bxNewCXXObject<BigInt>();
-    ret->data = px->data / py->data;
+    div(ret->data, px->data, py->data);
     plhs[0] = bex::__bxCreateExtObj_v(ret);
 }
 
