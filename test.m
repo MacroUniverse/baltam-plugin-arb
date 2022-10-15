@@ -1,5 +1,6 @@
 load_plugin('arb');
 
+%% 测试双精度特殊函数
 val = 0.8151329368027908;
 if abs((hypergeom(0.1, -0.2, 0.3) - val)/val) > eps
 	error('failed!');
@@ -65,4 +66,12 @@ val = [4.5882301380287638e-286
 if max(abs((coulombF(203, -0.1, [6; 10-0.1i]) - val)./val)) > eps
 	error('failed!');
 end
+	
+%% 测试 BigInt 大整数
+a = BigInt_create(123);
+b = BigInt_create(234);
+c = a + b;
+disp('c 是否等于 357?');
+c
+
 unload_plugin('arb');
