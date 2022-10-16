@@ -129,7 +129,7 @@ string BigInt::to_string() const { return ::to_string(data); }
 string BigInt::classname() const { return "BigInt"; }
 
 struct BigFloat : public extern_obj_base {
-    Areal data;
+    Breal data;
     BALTAM_LOCAL static int ID;
     BigFloat() = default;
     BigFloat(Doub_I x): data(x) {}
