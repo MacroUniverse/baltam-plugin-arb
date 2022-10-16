@@ -36,11 +36,18 @@ void hypergeom(int, bxArray*[], int, const bxArray*[]);
 void gammaC(int, bxArray*[], int, const bxArray*[]);
 void lgamma(int, bxArray*[], int, const bxArray*[]);
 void coulombF(int, bxArray*[], int, const bxArray*[]);
+
 void BigInt_create(int, bxArray*[], int, const bxArray*[]);
 void BigInt_add(int, bxArray*[], int, const bxArray*[]);
 void BigInt_sub(int, bxArray*[], int, const bxArray*[]);
 void BigInt_mul(int, bxArray*[], int, const bxArray*[]);
 void BigInt_div(int, bxArray*[], int, const bxArray*[]);
+
+void BigFloat_create(int, bxArray*[], int, const bxArray*[]);
+void BigFloat_add(int, bxArray*[], int, const bxArray*[]);
+void BigFloat_sub(int, bxArray*[], int, const bxArray*[]);
+void BigFloat_mul(int, bxArray*[], int, const bxArray*[]);
+void BigFloat_div(int, bxArray*[], int, const bxArray*[]);
 
 static const char * hypergeom_help =
     "详见 Matlab 的 hypergeom 函数文档。";
@@ -68,6 +75,21 @@ static const char * BigInt_mul_help =
 
 static const char * BigInt_div_help =
     "大整数相除";
+
+static const char * BigFloat_create_help =
+    "生成任意精度浮点数";
+
+static const char * BigFloat_add_help =
+    "任意精度浮点数相加";
+
+static const char * BigFloat_sub_help =
+    "任意精度浮点数相减";
+
+static const char * BigFloat_mul_help =
+    "任意精度浮点数相乘";
+
+static const char * BigFloat_div_help =
+    "任意精度浮点数相除";
 
 BALTAM_BEX_DEFINE_FCN_VARS
 
@@ -106,38 +128,78 @@ string BigInt::to_string() const { return ::to_string(data); }
 
 string BigInt::classname() const { return "BigInt"; }
 
+struct BigFloat : public extern_obj_base {
+    Areal data;
+    BALTAM_LOCAL static int ID;
+    BigFloat() = default;
+    BigFloat(Doub_I x): data(x) {}
+    BigFloat(Str_I s): data(s) {}
+    extern_obj_base *dup() const override;
+    ~BigFloat() override;
+    // 可选：转化为字符串的实现
+    string to_string() const override;
+    // 自定义类型名字
+    string classname() const override;
+};
+
+int BigFloat::ID = 0;
+
+extern_obj_base *BigFloat::dup() const {
+    BigFloat *ret = new BigFloat(*this);
+    ret->data = data;
+    return ret;
+}
+
+BigFloat::~BigFloat() {}
+
+string BigFloat::to_string() const { return ::to_string(data, 32); }
+
+string BigFloat::classname() const { return "BigFloat"; }
+
 int bxPluginInit(int, const bxArray*[]) {
-    int sid = bxAddCXXClass<BigInt>(PLUGIN_NAME, bex::__bxAddCXXClass_impl);
-    bxRegisterBinaryOperator(PLUGIN_NAME, "+", sid, sid, BigInt_add);
-    bxRegisterBinaryOperator(PLUGIN_NAME, "-", sid, sid, BigInt_sub);
-    bxRegisterBinaryOperator(PLUGIN_NAME, "*", sid, sid, BigInt_mul);
-    bxRegisterBinaryOperator(PLUGIN_NAME, "/", sid, sid, BigInt_div);
+    int BigInt_sid = bxAddCXXClass<BigInt>(PLUGIN_NAME, bex::__bxAddCXXClass_impl);
+    bxRegisterBinaryOperator(PLUGIN_NAME, "+", BigInt_sid, BigInt_sid, BigInt_add);
+    bxRegisterBinaryOperator(PLUGIN_NAME, "-", BigInt_sid, BigInt_sid, BigInt_sub);
+    bxRegisterBinaryOperator(PLUGIN_NAME, "*", BigInt_sid, BigInt_sid, BigInt_mul);
+    bxRegisterBinaryOperator(PLUGIN_NAME, "/", BigInt_sid, BigInt_sid, BigInt_div);
+
+    int BigFloat_sid = bxAddCXXClass<BigFloat>(PLUGIN_NAME, bex::__bxAddCXXClass_impl);
+    bxRegisterBinaryOperator(PLUGIN_NAME, "+", BigFloat_sid, BigFloat_sid, BigFloat_add);
+    bxRegisterBinaryOperator(PLUGIN_NAME, "-", BigFloat_sid, BigFloat_sid, BigFloat_sub);
+    bxRegisterBinaryOperator(PLUGIN_NAME, "*", BigFloat_sid, BigFloat_sid, BigFloat_mul);
+    bxRegisterBinaryOperator(PLUGIN_NAME, "/", BigFloat_sid, BigFloat_sid, BigFloat_div);
     return 0;
 }
 
-int bxPluginFini(){ flint_cleanup(); return 0; }
+int bxPluginFini() { flint_cleanup(); return 0; }
 
 static bexfun_info_t flist[] = {
     {"hypergeom", hypergeom, hypergeom_help},
     {"gammaC", gammaC, gammaC_help},
     {"lgamma", lgamma, lgamma_help},
     {"coulombF", coulombF, coulombF_help},
+
     {"BigInt", BigInt_create, BigInt_create_help},
     {"BigInt_add", BigInt_add, BigInt_add_help},
     {"BigInt_sub", BigInt_sub, BigInt_sub_help},
     {"BigInt_mul", BigInt_mul, BigInt_mul_help},
     {"BigInt_div", BigInt_div, BigInt_div_help},
+
+    {"BigFloat", BigFloat_create, BigFloat_create_help},
+    {"BigFloat_add", BigFloat_add, BigFloat_add_help},
+    {"BigFloat_sub", BigFloat_sub, BigFloat_sub_help},
+    {"BigFloat_mul", BigFloat_mul, BigFloat_mul_help},
+    {"BigFloat_div", BigFloat_div, BigFloat_div_help},
+
     {"", nullptr, nullptr}
 };
 
-bexfun_info_t * bxPluginFunctions() {
-    return flist;
-}
+bexfun_info_t * bxPluginFunctions() { return flist; }
 
 void BigInt_create(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     if (nlhs > 1 || nrhs != 1)
         bxErrMsgTxt("用法： BigInt(整数或字符串表示的整数)");
-    BigInt * ret;
+    BigInt *ret;
     if (bxIsRealDouble(prhs[0]))
         ret = bxNewCXXObject<BigInt>(*bxGetDoubles(prhs[0]));
     else if (bxIsString(prhs[0]))
@@ -151,7 +213,7 @@ void BigInt_add(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     
     BigInt *px = bxGetExtObj<BigInt>(prhs[0], bex::__bxGetExtObj_impl);
     BigInt *py = bxGetExtObj<BigInt>(prhs[1], bex::__bxGetExtObj_impl);
-    BigInt * ret = bxNewCXXObject<BigInt>();
+    BigInt *ret = bxNewCXXObject<BigInt>();
     add(ret->data, px->data, py->data);
     plhs[0] = bex::__bxCreateExtObj_v(ret);
 }
@@ -162,7 +224,7 @@ void BigInt_sub(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     
     BigInt *px = bxGetExtObj<BigInt>(prhs[0], bex::__bxGetExtObj_impl);
     BigInt *py = bxGetExtObj<BigInt>(prhs[1], bex::__bxGetExtObj_impl);
-    BigInt * ret = bxNewCXXObject<BigInt>();
+    BigInt *ret = bxNewCXXObject<BigInt>();
     sub(ret->data, px->data, py->data);
     plhs[0] = bex::__bxCreateExtObj_v(ret);
 }
@@ -173,7 +235,7 @@ void BigInt_mul(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     
     BigInt *px = bxGetExtObj<BigInt>(prhs[0], bex::__bxGetExtObj_impl);
     BigInt *py = bxGetExtObj<BigInt>(prhs[1], bex::__bxGetExtObj_impl);
-    BigInt * ret = bxNewCXXObject<BigInt>();
+    BigInt *ret = bxNewCXXObject<BigInt>();
     mul(ret->data, px->data, py->data);
     plhs[0] = bex::__bxCreateExtObj_v(ret);
 }
@@ -184,7 +246,63 @@ void BigInt_div(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     
     BigInt *px = bxGetExtObj<BigInt>(prhs[0], bex::__bxGetExtObj_impl);
     BigInt *py = bxGetExtObj<BigInt>(prhs[1], bex::__bxGetExtObj_impl);
-    BigInt * ret = bxNewCXXObject<BigInt>();
+    BigInt *ret = bxNewCXXObject<BigInt>();
+    div(ret->data, px->data, py->data);
+    plhs[0] = bex::__bxCreateExtObj_v(ret);
+}
+
+
+void BigFloat_create(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
+    if (nlhs > 1 || nrhs != 1)
+        bxErrMsgTxt("用法： BigFloat(整数或字符串表示的整数)");
+    BigFloat * ret;
+    if (bxIsRealDouble(prhs[0]))
+        ret = bxNewCXXObject<BigFloat>(*bxGetDoubles(prhs[0]));
+    else if (bxIsString(prhs[0]))
+        ret = bxNewCXXObject<BigFloat>(bxGetStringDataPr(prhs[0]));
+    plhs[0] = bex::__bxCreateExtObj_v(ret);
+}
+
+void BigFloat_add(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
+    if (nlhs > 1 || nrhs != 2)
+        bxErrMsgTxt("用法： BigFloat_add(大整数, 大整数)");
+    
+    BigFloat *px = bxGetExtObj<BigFloat>(prhs[0], bex::__bxGetExtObj_impl);
+    BigFloat *py = bxGetExtObj<BigFloat>(prhs[1], bex::__bxGetExtObj_impl);
+    BigFloat *ret = bxNewCXXObject<BigFloat>();
+    add(ret->data, px->data, py->data);
+    plhs[0] = bex::__bxCreateExtObj_v(ret);
+}
+
+void BigFloat_sub(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
+    if (nlhs > 1 || nrhs != 2)
+        bxErrMsgTxt("用法： BigFloat_sub(大整数, 大整数)");
+    
+    BigFloat *px = bxGetExtObj<BigFloat>(prhs[0], bex::__bxGetExtObj_impl);
+    BigFloat *py = bxGetExtObj<BigFloat>(prhs[1], bex::__bxGetExtObj_impl);
+    BigFloat *ret = bxNewCXXObject<BigFloat>();
+    sub(ret->data, px->data, py->data);
+    plhs[0] = bex::__bxCreateExtObj_v(ret);
+}
+
+void BigFloat_mul(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
+    if (nlhs > 1 || nrhs != 2)
+        bxErrMsgTxt("用法： BigFloat_mul(大整数, 大整数)");
+    
+    BigFloat *px = bxGetExtObj<BigFloat>(prhs[0], bex::__bxGetExtObj_impl);
+    BigFloat *py = bxGetExtObj<BigFloat>(prhs[1], bex::__bxGetExtObj_impl);
+    BigFloat * ret = bxNewCXXObject<BigFloat>();
+    mul(ret->data, px->data, py->data);
+    plhs[0] = bex::__bxCreateExtObj_v(ret);
+}
+
+void BigFloat_div(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
+    if (nlhs > 1 || nrhs != 2)
+        bxErrMsgTxt("用法： BigFloat_div(大整数, 大整数)");
+    
+    BigFloat *px = bxGetExtObj<BigFloat>(prhs[0], bex::__bxGetExtObj_impl);
+    BigFloat *py = bxGetExtObj<BigFloat>(prhs[1], bex::__bxGetExtObj_impl);
+    BigFloat *ret = bxNewCXXObject<BigFloat>();
     div(ret->data, px->data, py->data);
     plhs[0] = bex::__bxCreateExtObj_v(ret);
 }
