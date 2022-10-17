@@ -44,6 +44,7 @@ void BigInt_mul(int, bxArray*[], int, const bxArray*[]);
 void BigInt_div(int, bxArray*[], int, const bxArray*[]);
 
 void BigFloat_create(int, bxArray*[], int, const bxArray*[]);
+void digits(int, bxArray*[], int, const bxArray*[]);
 void BigFloat_add(int, bxArray*[], int, const bxArray*[]);
 void BigFloat_sub(int, bxArray*[], int, const bxArray*[]);
 void BigFloat_mul(int, bxArray*[], int, const bxArray*[]);
@@ -78,6 +79,9 @@ static const char * BigInt_div_help =
 
 static const char * BigFloat_create_help =
     "生成任意精度浮点数";
+
+static const char * digits_help =
+    "设置或查看 BigFloat 运算的有效数字位数";
 
 static const char * BigFloat_add_help =
     "任意精度浮点数相加";
@@ -186,6 +190,7 @@ static bexfun_info_t flist[] = {
     {"BigInt_div", BigInt_div, BigInt_div_help},
 
     {"BigFloat", BigFloat_create, BigFloat_create_help},
+    {"digits", digits, digits_help},
     {"BigFloat_add", BigFloat_add, BigFloat_add_help},
     {"BigFloat_sub", BigFloat_sub, BigFloat_sub_help},
     {"BigFloat_mul", BigFloat_mul, BigFloat_mul_help},
@@ -251,16 +256,37 @@ void BigInt_div(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
     plhs[0] = bex::__bxCreateExtObj_v(ret);
 }
 
-
 void BigFloat_create(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
-    if (nlhs > 1 || nrhs != 1)
-        bxErrMsgTxt("用法： BigFloat(整数或字符串表示的整数)");
+    if (nlhs > 1 || (nrhs != 1 && nrhs != 2))
+        bxErrMsgTxt("用法： BigFloat(浮点数或字符串表示的浮点数)");
     BigFloat * ret;
-    if (bxIsRealDouble(prhs[0]))
+    if (bxIsRealDouble(prhs[0])) {
         ret = bxNewCXXObject<BigFloat>(*bxGetDoubles(prhs[0]));
-    else if (bxIsString(prhs[0]))
+    }
+    else if (bxIsString(prhs[0])) {
         ret = bxNewCXXObject<BigFloat>(bxGetStringDataPr(prhs[0]));
+    }
     plhs[0] = bex::__bxCreateExtObj_v(ret);
+}
+
+void digits(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {
+    if (nlhs > 1 || (nrhs != 0 && nrhs != 1))
+        bxErrMsgTxt("用法： 旧有效位数 = BigFloat(新有效位数-可省略)");
+
+    double old_digi = arb_digits();
+
+    if (nrhs == 1) {
+        if (!bxIsRealDouble(prhs[0]))
+            bxErrMsgTxt("输入必须是双精度实数");
+        if (bxGetM(prhs[0]) != 1 || bxGetN(prhs[0]) != 1)
+            bxErrMsgTxt("不允许输入数组");
+        double *px = bxGetDoubles(prhs[0]);
+        arb_digits(*px);
+    }
+
+    plhs[0] = bxCreateDoubleMatrix(1, 1, bxREAL);
+    double *py = bxGetDoubles(plhs[0]);
+    *py = old_digi;
 }
 
 void BigFloat_add(int nlhs, bxArray *plhs[], int nrhs, const bxArray *prhs[]) {

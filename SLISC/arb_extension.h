@@ -20,6 +20,15 @@ inline char * arf_get_str(const arf_t x, slong prec)
 }
 #endif
 
+inline int arf_set_str(arf_t res, const char * inp, slong prec)
+{
+    arb_t y; arb_init(y);
+    if (arb_set_str(y, inp, prec))
+        return 1;
+    arf_set(res, &y->mid);
+    return 0;
+}
+
 #ifdef SLS_USE_QUAD_MATH
 // get a quad precision number from arf_t type
 // similar to arf_get_d()
@@ -274,6 +283,23 @@ inline void abs(Bint_O y, Bint_I x)
 inline void pow(Bint_O z, Bint_I x, Llong_I y)
 { assert(y >= 0); fmpz_pow_ui(z.m_n, x.m_n, y); }
 
+
+// TODO: using static variable is not thread-safe, need to think about the precision machenism
+inline Llong arb_prec(Llong_I new_prec = -1)
+{
+	static Llong prec = 128;
+	if (new_prec > 1)
+		prec = new_prec;
+	return prec;
+}
+
+// arb_prec() in decimal
+inline Llong arb_digits(Llong_I new_digit = -1)
+{
+	const Doub log2_10 = 3.32192809489;
+	return floor(arb_prec(ceil(new_digit * log2_10)) / log2_10);
+}
+
 // arf_t: arbitrary precision floating point numbers
 // https://arblib.org/arf.html
 struct Breal {
@@ -288,11 +314,11 @@ struct Breal {
 		// printf("Breal: Doub init called.\n");
 		arf_init(m_n); arf_set_d(m_n, val);
 	}
-	// Breal(Str_I str, Int_I base = 10)
-	// {
-	// 	// printf("Breal: Str init called.\n");
-	// 	arf_init(m_n); arf_set_str(m_n, str.c_str(), base);
-	// }
+    Breal(Str_I str)
+    {
+        // printf("Breal: Str init called.\n");
+        arf_init(m_n); arf_set_str(m_n, str.c_str(), arb_prec());
+    }
 	Breal(const Breal &x) // copy constructor
 	{
 		// printf("Breal: copy constructor called.\n");
@@ -316,8 +342,6 @@ struct Breal {
 typedef const Breal &Breal_I;
 typedef Breal &Breal_O, &Breal_IO;
 
-// TODO: using static variable is not thread-safe, need to think about the precision machenism
-inline Llong arb_prec() { return 5000; }
 inline arf_rnd_t arb_rnd() { return ARF_RND_NEAR; }
 
 inline Str to_string(Breal_I x, Long_I digits = 4)
@@ -357,6 +381,21 @@ struct Areal {
 		// printf("Areal: default init called.\n");
 		arb_init(m_n);
 	}
+    Areal(arb_t val)
+    {
+        // printf("Areal: arb_t init called.\n");
+        arb_init(m_n); arb_set(m_n, val);
+    }
+    Areal(arf_t val)
+    {
+        // printf("Areal: arf_t init called.\n");
+        arb_init(m_n); arb_set_arf(m_n, val);
+    }
+    Areal(Breal_I val)
+    {
+        // printf("Areal: Breal init called.\n");
+        arb_init(m_n); arb_set_arf(m_n, val.m_n);
+    }
 	Areal(Doub_I val)
 	{
 		// printf("Areal: Doub init called.\n");
@@ -455,21 +494,6 @@ inline void asin(Areal_O y, Areal_I x)
 inline void acos(Areal_O y, Areal_I x)
 { arb_acos(y.m_n, x.m_n, arb_prec()); }
 
-inline void const_pi(Areal_O z)
-{ arb_const_pi(z.m_n, arb_prec()); }
-
-inline void const_e(Areal_O z)
-{ arb_const_e(z.m_n, arb_prec()); }
-
-inline void const_sqrt_pi(Areal_O z)
-{ arb_const_sqrt_pi(z.m_n, arb_prec()); }
-
-inline void const_log2(Areal_O z)
-{ arb_const_log2(z.m_n, arb_prec()); }
-
-inline void const_log10(Areal_O z)
-{ arb_const_log10(z.m_n, arb_prec()); }
-
 // y = x * 2^e
 inline void ldexp(Areal_O y, Areal_I x, Bint_I e)
 { arb_mul_2exp_fmpz(y.m_n, x.m_n, e.m_n); }
@@ -489,5 +513,23 @@ inline void gamma(Areal_O z, Areal_I x)
 
 inline void digamma(Areal_O z, Areal_I x)
 { arb_digamma(z.m_n, x.m_n, arb_prec()); }
+
+// constants
+
+inline void const_pi(Areal_O z)
+{ arb_const_pi(z.m_n, arb_prec()); }
+
+inline void const_e(Areal_O z)
+{ arb_const_e(z.m_n, arb_prec()); }
+
+inline void const_sqrt_pi(Areal_O z)
+{ arb_const_sqrt_pi(z.m_n, arb_prec()); }
+
+inline void const_log2(Areal_O z)
+{ arb_const_log2(z.m_n, arb_prec()); }
+
+inline void const_log10(Areal_O z)
+{ arb_const_log10(z.m_n, arb_prec()); }
+
 
 } // namespace slisc
